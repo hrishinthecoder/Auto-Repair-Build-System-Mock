@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Repair Build System</title>
+    <script>
+        // Suppress Tailwind CDN warning in console
+        window.console.warn = function() {};
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-800 min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with Gradient -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+            <div class="flex items-center gap-4 mb-3">
+                <div class="text-5xl">🔧</div>
+                <h1 class="text-4xl font-bold">Auto-Repair Build System</h1>
+            </div>
+            <p class="text-indigo-100 text-lg mb-4">Intelligent Self-Healing Code Infrastructure</p>
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <p class="text-sm text-white/90 mb-2">
+                    <strong class="text-yellow-300">🔄 Process Flow:</strong> 
+                    Run broken.py → Detect Error → Read fixed.py Template → Overwrite → Retry (Max 3 attempts)
+                </p>
+                <p class="text-xs text-white/75">
+                    💡 <strong>Strategy:</strong> Mock AI using pre-defined fixed.py template (No API credits consumed)
+                </p>
+            </div>
+        </div>
+
+        <!-- Upload Section with Enhanced Design -->
+        <div class="bg-white rounded-2xl shadow-2xl p-8 mb-8 border-2 border-slate-200 hover:border-indigo-300 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="text-3xl">📤</div>
+                <h2 class="text-2xl font-bold text-slate-900">Upload Broken Python File</h2>
+            </div>
+            
+            <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <p class="text-sm text-blue-900 flex items-center gap-2">
+                    <span class="text-lg">ℹ️</span>
+                    <span>System will automatically read <code class="bg-white px-2 py-1 rounded font-mono text-xs border">fixed.py</code> template and apply fixes when errors are detected</span>
+                </p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                <div class="flex-1">
+                    <input type="file" id="fileInput" accept=".py" 
+                        class="w-full px-5 py-4 border-2 border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none transition-all duration-200 cursor-pointer hover:border-indigo-400 bg-slate-50">
+                </div>
+                <button onclick="startRepair()" id="uploadBtn"
+                    class="px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-105 active:scale-95">
+                    <span class="flex items-center gap-2">
+                        <span class="text-xl">🚀</span>
+                        <span>Run</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Live Progress Indicator -->
+        <div id="liveProgress" style="display: none;" class="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl shadow-2xl p-6 mb-8 text-white">
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-white/30 border-t-white"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-xl">⚙️</div>
+                </div>
+                <div class="flex-1">
+                    <p class="font-bold text-lg" id="liveStatusText">Running auto-repair loop...</p>
+                    <p class="text-sm text-white/80 mt-1" id="liveStatusDetail">Checking status every 2 seconds</p>
+                </div>
+                <div class="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <p class="text-xs text-white/70">Polling Active</p>
+                    <p class="text-lg font-mono font-bold" id="pollCounter">0s</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            
+            <!-- Timeline Section - LEFT COLUMN -->
+            <div id="timelineSection" style="display: none;" class="order-2 lg:order-1">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 h-full border-2 border-slate-200">
+                    <div class="flex items-center gap-3 mb-5 pb-4 border-b-2 border-slate-200">
+                        <div class="text-2xl">📋</div>
+                        <h2 class="text-2xl font-bold text-slate-900">Live Repair Log</h2>
+                    </div>
+                    <div id="timeline" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"></div>
+                </div>
+            </div>
+
+            <!-- Code View Section - RIGHT COLUMN -->
+            <div id="codeSection" style="display: none;" class="order-1 lg:order-2">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 h-full border-2 border-slate-200">
+                    <div class="flex items-center justify-between mb-5 pb-4 border-b-2 border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">📄</div>
+                            <h2 class="text-2xl font-bold text-slate-900">broken.py</h2>
+                        </div>
+                        <span id="codeStatus" class="px-4 py-2 rounded-full text-sm font-bold shadow-md"></span>
+                    </div>
+                    <div class="bg-slate-950 rounded-xl p-5 max-h-[400px] overflow-y-auto border-2 border-slate-700 shadow-inner">
+                        <pre id="codeDisplay" class="text-green-400 font-mono text-sm whitespace-pre-wrap leading-relaxed"></pre>
+                    </div>
+                    <button onclick="downloadFile()" id="downloadBtn" style="display: none;"
+                        class="mt-5 w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95">
+                        <span class="flex items-center justify-center gap-2">
+                            <span class="text-xl">⬇️</span>
+                            <span>Download Fixed File</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Status Banner -->
+        <div id="statusBox" style="display: none;" class="bg-white rounded-2xl shadow-2xl p-8 border-2 border-slate-200">
+            <h3 class="text-2xl font-bold text-slate-900 mb-5 flex items-center gap-3">
+                <span class="text-3xl">🎯</span>
+                <span>Final Result</span>
+            </h3>
+            <div id="statusBadge" class="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-xl shadow-xl mb-5"></div>
+            <div id="statusMessage" class="text-slate-700 space-y-2"></div>
+        </div>
+    </div>
+
+    <style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Pulse Animation for Live Updates */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); }
+        }
+        .timeline-new {
+            animation: pulse-glow 2s ease-in-out;
+        }
+    </style>
+
+    <script>
+        const API = 'http://localhost:8000/api';
+        let pollInterval = null;
+        let pollStartTime = null;
+        let currentJobId = null;
+
+        // SPECIFICATION-EXACT display rules - matches the PDF exactly
+        const DISPLAY_RULES = {
+            BUILDING: {
+                leftIcon: '🚀',  // Big icon on the left
+                fullMessage: '🚀 Starting Build...',  // Complete message text
+                color: 'bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-400 text-blue-900'
+            },
+            ERROR: {
+                leftIcon: '❌',
+                fullMessage: '❌ Build Failed (Syntax Error).',
+                color: 'bg-gradient-to-r from-red-100 to-red-50 border-2 border-red-400 text-red-900'
+            },
+            FIXING: {
+                leftIcon: '🧠',
+                fullMessage: '🧠 AI Auto-Repairing...',
+                color: 'bg-gradient-to-r from-yellow-100 to-yellow-50 border-2 border-yellow-400 text-yellow-900'
+            },
+            SUCCESS: {
+                leftIcon: '✅',
+                fullMessage: '✅ Re-build Successful!',
+                color: 'bg-gradient-to-r from-green-100 to-green-50 border-2 border-green-400 text-green-900'
+            },
+            FAILED: {
+                leftIcon: '⛔',
+                fullMessage: '⛔ Maximum Retries Reached',
+                color: 'bg-gradient-to-r from-red-100 to-red-50 border-2 border-red-400 text-red-900'
+            }
+        };
+
+        function showTimeline(events) {
+            const timeline = document.getElementById('timeline');
+            const currentEventCount = timeline.children.length;
+            const newEvents = events.slice(currentEventCount);
+            
+            newEvents.forEach(event => {
+                // Get the display rules for this status
+                const rules = DISPLAY_RULES[event.status];
+                
+                if (!rules) {
+                    console.warn('Unknown status:', event.status);
+                    return;
+                }
+
+                const eventDiv = document.createElement('div');
+                eventDiv.className = `border-2 rounded-xl p-5 ${rules.color} timeline-new shadow-md hover:shadow-lg transition-all duration-200`;
+                
+                // Use leftIcon for the big icon, fullMessage for the text
+                eventDiv.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <div class="text-3xl flex-shrink-0">${rules.leftIcon}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                                <span class="font-bold text-sm uppercase tracking-wide">${event.status}</span>
+                                <span class="text-xs opacity-75 font-mono bg-white/50 px-2 py-1 rounded">${event.timestamp}</span>
+                            </div>
+                            <p class="text-sm font-medium whitespace-pre-line leading-relaxed">${rules.fullMessage}</p>
+                        </div>
+                    </div>
+                `;
+                timeline.appendChild(eventDiv);
+            });
+            
+            timeline.scrollTop = timeline.scrollHeight;
+        }
+
+        function updatePollCounter() {
+            if (pollStartTime) {
+                const elapsed = Math.floor((Date.now() - pollStartTime) / 1000);
+                document.getElementById('pollCounter').textContent = `${elapsed}s`;
+            }
+        }
+
+        async function startRepair() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('⚠️ Please select a file first!');
+                return;
+            }
+
+            if (!file.name.endsWith('.py')) {
+                alert('⚠️ Please select a Python (.py) file!');
+                return;
+            }
+
+            // Reset UI
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('liveProgress').style.display = 'block';
+            document.getElementById('codeSection').style.display = 'none';
+            document.getElementById('timelineSection').style.display = 'none';
+            document.getElementById('statusBox').style.display = 'none';
+            document.getElementById('timeline').innerHTML = '';
+            
+            // Start poll counter
+            pollStartTime = Date.now();
+            const counterInterval = setInterval(updatePollCounter, 100);
+
+            // Upload file
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                document.getElementById('liveStatusText').textContent = '📤 Uploading file...';
+                document.getElementById('liveStatusDetail').textContent = 'Sending file to server';
+                
+                const response = await fetch(`${API}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const data = await response.json();
+
+                // Clear intervals
+                clearInterval(counterInterval);
+                
+                // Hide live progress
+                document.getElementById('liveProgress').style.display = 'none';
+
+                // Show sections
+                document.getElementById('codeSection').style.display = 'block';
+                document.getElementById('timelineSection').style.display = 'block';
+                document.getElementById('statusBox').style.display = 'block';
+
+                // Display all events
+                showTimeline(data.events);
+
+                // Show final code
+                document.getElementById('codeDisplay').textContent = data.final_code;
+
+                // Get display rules for final status
+                const finalRules = DISPLAY_RULES[data.status] || DISPLAY_RULES.FAILED;
+
+                // Update status badge
+                const statusBadge = document.getElementById('statusBadge');
+                statusBadge.className = `inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-xl shadow-xl mb-5 ${finalRules.color}`;
+                statusBadge.innerHTML = `<span class="text-4xl">${finalRules.leftIcon}</span><span>${data.status}</span>`;
+
+                // Update status message
+                const statusMessage = document.getElementById('statusMessage');
+                if (data.status === 'SUCCESS') {
+                    statusMessage.innerHTML = `
+                        <p class="text-green-700 font-bold text-lg flex items-center gap-2">
+                            <span class="text-2xl">✅</span>
+                            <span>Code successfully fixed using fixed.py template!</span>
+                        </p>
+                        <div class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                            <p class="text-slate-700"><strong>Repair Attempts:</strong> ${data.retries}</p>
+                            <p class="text-slate-700"><strong>Strategy:</strong> Template-based overwrite</p>
+                            <p class="text-slate-700"><strong>Result:</strong> broken.py successfully replaced with fixed.py content</p>
+                        </div>
+                    `;
+                    document.getElementById('downloadBtn').style.display = 'block';
+                    document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-green-500 to-emerald-500 text-white';
+                    document.getElementById('codeStatus').textContent = '✅ FIXED';
+                } else {
+                    statusMessage.innerHTML = `
+                        <p class="text-red-700 font-bold text-lg flex items-center gap-2">
+                            <span class="text-2xl">❌</span>
+                            <span>Unable to repair the code</span>
+                        </p>
+                        <div class="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
+                            <p class="text-slate-700"><strong>Attempts Made:</strong> ${data.retries} (Maximum reached)</p>
+                            <p class="text-slate-700"><strong>Limitation:</strong> System can only fix code matching the fixed.py template</p>
+                            <p class="text-slate-700"><strong>Template Code:</strong> <code class="bg-white px-2 py-1 rounded border">print("Hello World")</code></p>
+                        </div>
+                    `;
+                    document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-red-500 to-red-600 text-white';
+                    document.getElementById('codeStatus').textContent = '❌ FAILED';
+                }
+
+            } catch (error) {
+                clearInterval(counterInterval);
+                document.getElementById('liveProgress').style.display = 'none';
+                alert('❌ Error: ' + error.message);
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+                pollStartTime = null;
+            }
+        }
+
+        async function downloadFile() {
+            window.open(`${API}/download/broken.py`, '_blank');
+        }
+
+        // Reset file input when user selects a new file
+        document.getElementById('fileInput').addEventListener('change', function() {
+            document.getElementById('codeSection').style.display = 'none';
+            document.getElementById('timelineSection').style.display = 'none';
+            document.getElementById('statusBox').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
