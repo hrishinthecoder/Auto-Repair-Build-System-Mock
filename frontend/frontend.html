@@ -122,6 +122,31 @@
                 <span>Final Result</span>
             </h3>
             <div id="statusBadge" class="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-xl shadow-xl mb-5"></div>
+            
+            <!-- Retry Counter -->
+            <div id="retryCounter" class="mb-5 p-5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-200 shadow-md">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🔄</span>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Retry Attempts</p>
+                            <p class="text-xs text-slate-500 mt-1">Maximum allowed: 3 retries</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-5xl font-bold text-indigo-600" id="retryCount">0</div>
+                        <p class="text-xs text-slate-500 mt-1" id="retryLabel">attempts</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex gap-2">
+                        <div id="retry1" class="flex-1 h-3 bg-gray-200 rounded-full transition-all duration-500"></div>
+                        <div id="retry2" class="flex-1 h-3 bg-gray-200 rounded-full transition-all duration-500"></div>
+                        <div id="retry3" class="flex-1 h-3 bg-gray-200 rounded-full transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+            
             <div id="statusMessage" class="text-slate-700 space-y-2"></div>
         </div>
     </div>
@@ -162,8 +187,8 @@
         // SPECIFICATION-EXACT display rules - matches the PDF exactly
         const DISPLAY_RULES = {
             BUILDING: {
-                leftIcon: '🚀',  // Big icon on the left
-                fullMessage: '🚀 Starting Build...',  // Complete message text
+                leftIcon: '🚀',
+                fullMessage: '🚀 Starting Build...',
                 color: 'bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-400 text-blue-900'
             },
             ERROR: {
@@ -188,46 +213,131 @@
             }
         };
 
+        // Auto-cycle process: simulates the Error -> Fixing -> Success flow
+        function simulateAutoCycle() {
+            const timeline = document.getElementById('timeline');
+            
+            // Show sections
+            document.getElementById('timelineSection').style.display = 'block';
+            
+            // Clear timeline
+            timeline.innerHTML = '';
+            
+            const now = new Date().toLocaleTimeString();
+            
+            // State 1: Starting Build
+            setTimeout(() => {
+                addTimelineEvent({
+                    status: 'BUILDING',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }, 0);
+            
+            // State 2: Error (Red Alert)
+            setTimeout(() => {
+                addTimelineEvent({
+                    status: 'ERROR',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }, 1500);
+            
+            // State 3: Fixing (Yellow item)
+            setTimeout(() => {
+                addTimelineEvent({
+                    status: 'FIXING',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }, 3000);
+            
+            // State 4: Success (Green item)
+            setTimeout(() => {
+                addTimelineEvent({
+                    status: 'SUCCESS',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }, 5000);
+        }
+
+        function addTimelineEvent(event) {
+            const timeline = document.getElementById('timeline');
+            const rules = DISPLAY_RULES[event.status];
+            
+            if (!rules) {
+                console.warn('Unknown status:', event.status);
+                return;
+            }
+
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `border-2 rounded-xl p-5 ${rules.color} timeline-new shadow-md hover:shadow-lg transition-all duration-200`;
+            
+            eventDiv.innerHTML = `
+                <div class="flex items-start gap-4">
+                    <div class="text-3xl flex-shrink-0">${rules.leftIcon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <span class="font-bold text-sm uppercase tracking-wide">${event.status}</span>
+                            <span class="text-xs opacity-75 font-mono bg-white/50 px-2 py-1 rounded">${event.timestamp}</span>
+                        </div>
+                        <p class="text-sm font-medium whitespace-pre-line leading-relaxed">${rules.fullMessage}</p>
+                    </div>
+                </div>
+            `;
+            timeline.appendChild(eventDiv);
+            timeline.scrollTop = timeline.scrollHeight;
+        }
+
         function showTimeline(events) {
             const timeline = document.getElementById('timeline');
             const currentEventCount = timeline.children.length;
             const newEvents = events.slice(currentEventCount);
             
             newEvents.forEach(event => {
-                // Get the display rules for this status
-                const rules = DISPLAY_RULES[event.status];
-                
-                if (!rules) {
-                    console.warn('Unknown status:', event.status);
-                    return;
-                }
-
-                const eventDiv = document.createElement('div');
-                eventDiv.className = `border-2 rounded-xl p-5 ${rules.color} timeline-new shadow-md hover:shadow-lg transition-all duration-200`;
-                
-                // Use leftIcon for the big icon, fullMessage for the text
-                eventDiv.innerHTML = `
-                    <div class="flex items-start gap-4">
-                        <div class="text-3xl flex-shrink-0">${rules.leftIcon}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
-                                <span class="font-bold text-sm uppercase tracking-wide">${event.status}</span>
-                                <span class="text-xs opacity-75 font-mono bg-white/50 px-2 py-1 rounded">${event.timestamp}</span>
-                            </div>
-                            <p class="text-sm font-medium whitespace-pre-line leading-relaxed">${rules.fullMessage}</p>
-                        </div>
-                    </div>
-                `;
-                timeline.appendChild(eventDiv);
+                addTimelineEvent(event);
             });
-            
-            timeline.scrollTop = timeline.scrollHeight;
         }
 
         function updatePollCounter() {
             if (pollStartTime) {
                 const elapsed = Math.floor((Date.now() - pollStartTime) / 1000);
                 document.getElementById('pollCounter').textContent = `${elapsed}s`;
+            }
+        }
+
+        function updateRetryCounter(retries, status) {
+            const retryCount = document.getElementById('retryCount');
+            const retryLabel = document.getElementById('retryLabel');
+            
+            // Update the number
+            retryCount.textContent = retries;
+            retryLabel.textContent = retries === 1 ? 'attempt' : 'attempts';
+            
+            // Update the progress bars
+            for (let i = 1; i <= 3; i++) {
+                const bar = document.getElementById(`retry${i}`);
+                if (i <= retries) {
+                    if (status === 'SUCCESS') {
+                        bar.className = 'flex-1 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500 shadow-md';
+                    } else if (retries >= 3) {
+                        bar.className = 'flex-1 h-3 bg-gradient-to-r from-red-400 to-red-500 rounded-full transition-all duration-500 shadow-md';
+                    } else {
+                        bar.className = 'flex-1 h-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full transition-all duration-500 shadow-md';
+                    }
+                } else {
+                    bar.className = 'flex-1 h-3 bg-gray-200 rounded-full transition-all duration-500';
+                }
+            }
+            
+            // Update retry counter styling based on status
+            const retryCounter = document.getElementById('retryCounter');
+            if (status === 'SUCCESS') {
+                retryCounter.className = 'mb-5 p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 shadow-md';
+                retryCount.className = 'text-5xl font-bold text-green-600';
+            } else if (retries >= 3) {
+                retryCounter.className = 'mb-5 p-5 bg-gradient-to-r from-red-50 to-red-100 rounded-xl border-2 border-red-300 shadow-md';
+                retryCount.className = 'text-5xl font-bold text-red-600';
+            } else {
+                retryCounter.className = 'mb-5 p-5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-200 shadow-md';
+                retryCount.className = 'text-5xl font-bold text-indigo-600';
             }
         }
 
@@ -257,6 +367,9 @@
             pollStartTime = Date.now();
             const counterInterval = setInterval(updatePollCounter, 100);
 
+            // Start the auto-cycle simulation
+            simulateAutoCycle();
+
             // Upload file
             const formData = new FormData();
             formData.append('file', file);
@@ -276,69 +389,93 @@
 
                 const data = await response.json();
 
-                // Clear intervals
-                clearInterval(counterInterval);
-                
-                // Hide live progress
-                document.getElementById('liveProgress').style.display = 'none';
+                // Wait for auto-cycle to complete (5 seconds) before showing final results
+                setTimeout(() => {
+                    // Clear intervals
+                    clearInterval(counterInterval);
+                    
+                    // Hide live progress
+                    document.getElementById('liveProgress').style.display = 'none';
 
-                // Show sections
-                document.getElementById('codeSection').style.display = 'block';
-                document.getElementById('timelineSection').style.display = 'block';
-                document.getElementById('statusBox').style.display = 'block';
+                    // Show sections
+                    document.getElementById('codeSection').style.display = 'block';
+                    document.getElementById('timelineSection').style.display = 'block';
+                    document.getElementById('statusBox').style.display = 'block';
 
-                // Display all events
-                showTimeline(data.events);
+                    // Display all events from backend (will add to existing auto-cycle events)
+                    showTimeline(data.events);
 
-                // Show final code
-                document.getElementById('codeDisplay').textContent = data.final_code;
+                    // Show final code
+                    document.getElementById('codeDisplay').textContent = data.final_code;
 
-                // Get display rules for final status
-                const finalRules = DISPLAY_RULES[data.status] || DISPLAY_RULES.FAILED;
+                    // Get display rules for final status
+                    const finalRules = DISPLAY_RULES[data.status] || DISPLAY_RULES.FAILED;
 
-                // Update status badge
-                const statusBadge = document.getElementById('statusBadge');
-                statusBadge.className = `inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-xl shadow-xl mb-5 ${finalRules.color}`;
-                statusBadge.innerHTML = `<span class="text-4xl">${finalRules.leftIcon}</span><span>${data.status}</span>`;
+                    // Update status badge
+                    const statusBadge = document.getElementById('statusBadge');
+                    statusBadge.className = `inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-xl shadow-xl mb-5 ${finalRules.color}`;
+                    statusBadge.innerHTML = `<span class="text-4xl">${finalRules.leftIcon}</span><span>${data.status}</span>`;
 
-                // Update status message
-                const statusMessage = document.getElementById('statusMessage');
-                if (data.status === 'SUCCESS') {
-                    statusMessage.innerHTML = `
-                        <p class="text-green-700 font-bold text-lg flex items-center gap-2">
-                            <span class="text-2xl">✅</span>
-                            <span>Code successfully fixed using fixed.py template!</span>
-                        </p>
-                        <div class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
-                            <p class="text-slate-700"><strong>Repair Attempts:</strong> ${data.retries}</p>
-                            <p class="text-slate-700"><strong>Strategy:</strong> Template-based overwrite</p>
-                            <p class="text-slate-700"><strong>Result:</strong> broken.py successfully replaced with fixed.py content</p>
-                        </div>
-                    `;
-                    document.getElementById('downloadBtn').style.display = 'block';
-                    document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-green-500 to-emerald-500 text-white';
-                    document.getElementById('codeStatus').textContent = '✅ FIXED';
-                } else {
-                    statusMessage.innerHTML = `
-                        <p class="text-red-700 font-bold text-lg flex items-center gap-2">
-                            <span class="text-2xl">❌</span>
-                            <span>Unable to repair the code</span>
-                        </p>
-                        <div class="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
-                            <p class="text-slate-700"><strong>Attempts Made:</strong> ${data.retries} (Maximum reached)</p>
-                            <p class="text-slate-700"><strong>Limitation:</strong> System can only fix code matching the fixed.py template</p>
-                            <p class="text-slate-700"><strong>Template Code:</strong> <code class="bg-white px-2 py-1 rounded border">print("Hello World")</code></p>
-                        </div>
-                    `;
-                    document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-red-500 to-red-600 text-white';
-                    document.getElementById('codeStatus').textContent = '❌ FAILED';
-                }
+                    // Update retry counter
+                    updateRetryCounter(data.retries || 0, data.status);
+
+                    // Update status message
+                    const statusMessage = document.getElementById('statusMessage');
+                    if (data.status === 'SUCCESS') {
+                        statusMessage.innerHTML = `
+                            <p class="text-green-700 font-bold text-lg flex items-center gap-2">
+                                <span class="text-2xl">✅</span>
+                                <span>Code successfully fixed using fixed.py template!</span>
+                            </p>
+                            <div class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                                <p class="text-slate-700"><strong>Strategy:</strong> Template-based overwrite</p>
+                                <p class="text-slate-700"><strong>Result:</strong> broken.py successfully replaced with fixed.py content</p>
+                                <p class="text-slate-700"><strong>Fixed On Attempt:</strong> ${data.retries}</p>
+                            </div>
+                        `;
+                        document.getElementById('downloadBtn').style.display = 'block';
+                        document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-green-500 to-emerald-500 text-white';
+                        document.getElementById('codeStatus').textContent = '✅ FIXED';
+                    } else if (data.retries >= 3) {
+                        // Maximum retries reached
+                        statusMessage.innerHTML = `
+                            <p class="text-red-700 font-bold text-lg flex items-center gap-2">
+                                <span class="text-2xl">⛔</span>
+                                <span>Error Cannot be Fixed. Maximum retries reached.</span>
+                            </p>
+                            <div class="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
+                                <p class="text-slate-700"><strong>Attempts Made:</strong> ${data.retries} (Maximum limit: 3)</p>
+                                <p class="text-slate-700"><strong>Status:</strong> Exited repair loop after maximum retries</p>
+                                <p class="text-slate-700"><strong>Limitation:</strong> System can only fix code matching the fixed.py template</p>
+                                <p class="text-slate-700"><strong>Template Code:</strong> <code class="bg-white px-2 py-1 rounded border">print("Hello World")</code></p>
+                            </div>
+                        `;
+                        document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-red-500 to-red-600 text-white';
+                        document.getElementById('codeStatus').textContent = '⛔ MAX RETRIES';
+                    } else {
+                        statusMessage.innerHTML = `
+                            <p class="text-red-700 font-bold text-lg flex items-center gap-2">
+                                <span class="text-2xl">❌</span>
+                                <span>Unable to repair the code</span>
+                            </p>
+                            <div class="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
+                                <p class="text-slate-700"><strong>Attempts Made:</strong> ${data.retries}</p>
+                                <p class="text-slate-700"><strong>Limitation:</strong> System can only fix code matching the fixed.py template</p>
+                                <p class="text-slate-700"><strong>Template Code:</strong> <code class="bg-white px-2 py-1 rounded border">print("Hello World")</code></p>
+                            </div>
+                        `;
+                        document.getElementById('codeStatus').className = 'px-4 py-2 rounded-full text-sm font-bold shadow-md bg-gradient-to-r from-red-500 to-red-600 text-white';
+                        document.getElementById('codeStatus').textContent = '❌ FAILED';
+                    }
+
+                    document.getElementById('uploadBtn').disabled = false;
+                    pollStartTime = null;
+                }, 5500); // Wait for auto-cycle to complete
 
             } catch (error) {
                 clearInterval(counterInterval);
                 document.getElementById('liveProgress').style.display = 'none';
                 alert('❌ Error: ' + error.message);
-            } finally {
                 document.getElementById('uploadBtn').disabled = false;
                 pollStartTime = null;
             }
