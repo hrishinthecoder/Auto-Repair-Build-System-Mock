@@ -19,7 +19,7 @@ It uses a "mock AI" approach. Instead of calling expensive APIs, it just reads a
 ```
 backend/     - Python FastAPI server
 frontend/    - HTML interface
-upload/    - stores the **broken.py** and **extra_error.py** file
+upload/    - stores the broken.py and extra_error.py file
 ```
 
 ## Quick Start
